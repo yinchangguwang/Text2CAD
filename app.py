@@ -8,6 +8,8 @@ import math
 from openai import APIConnectionError  
 import time
 
+API_KEY = os.getenv("OPENAI_API_KEY")  # 从环境变量获取密钥
+
 from json_to_stl_converter import create_stl_from_json_data
 
 app = Flask(__name__)
