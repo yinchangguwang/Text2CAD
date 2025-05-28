@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to CAD Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6; /* 淡雅的背景色 */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px; /* 限制最大宽度 */
+            margin-top: 30px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50; /* 深蓝灰色标题 */
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        #textInput {
+            width: calc(100% - 24px); /* 减去padding */
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            resize: vertical; /* 允许垂直调整大小 */
+            min-height: 80px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        #submitBtn {
+            background-color: #3498db; /* 清爽的蓝色 */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            display: block; /* 让按钮独占一行或与其他元素并排 */
+            margin: 0 auto 20px auto; /* 居中并添加底部边距 */
+            font-weight: 500;
+        }
+
+        #submitBtn:hover {
+            background-color: #2980b9; /* 悬停时深一点的蓝色 */
+        }
+
+        #submitBtn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        #viewerContainer {
+            width: 100%;
+            height: 500px; /* 可以根据需要调整 */
+            border: 1px solid #e0e0e0;
+            margin-top: 20px;
+            position: relative;
+            background-color: #f0f0f0; /* 查看器背景，可以与Three.js场景背景分开 */
+            border-radius: 6px;
+            overflow: hidden; /* 确保WebGL canvas不会溢出圆角 */
+        }
+
+        #loadingIndicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            color: #555;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px 25px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: none; /* Initially hidden */
+            z-index: 10;
+        }
+
+        #errorMessage {
+            color: #e74c3c; /* 显眼的红色错误信息 */
+            background-color: #fbeaea;
+            border: 1px solid #e74c3c;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            text-align: center;
+            display: none; /* 初始隐藏，有错误时显示 */
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            padding-bottom: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text to CAD Generator</h1>
+
+        <label for="textInput">Describe your 3D model:</label>
+        <textarea id="textInput" rows="5" placeholder="e.g., a red cylinder of radius 5 and height 10 at position 0,0,0"></textarea>
+
+        <button id="submitBtn">Generate Model</button>
+
+        <div id="viewerContainer">
+            <div id="loadingIndicator">Generating model, please wait...</div>
+        </div>
+        <div id="errorMessage" role="alert"></div>
+    </div>
+
+    <footer>
+        Powered by AI & Three.js
+    </footer>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const submitBtn = document.getElementById('submitBtn');
+        const viewerContainer = document.getElementById('viewerContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const errorMessageDiv = document.getElementById('errorMessage');
+
+        let scene, camera, renderer, controls; 
+
+        function initViewer() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x333333); 
+
+            const aspectRatio = viewerContainer.clientWidth / viewerContainer.clientHeight;
+            camera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000); 
+            camera.position.set(30, 25, 30); 
+            camera.lookAt(0, 0, 0);
+            camera.up.set(0, 1, 0); 
+            camera.updateProjectionMatrix(); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
+            renderer.setSize(viewerContainer.clientWidth, viewerContainer.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio); 
+            viewerContainer.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight1.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight1);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight2.position.set(-1, -1, 0.5).normalize(); 
+            scene.add(directionalLight2);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            // if (controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function clearScene() {
+            while (scene.children.length > 0) {
+                const object = scene.children[0];
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+                scene.remove(object);
+            }
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight1.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight1);
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight2.position.set(-1, -1, 0.5).normalize();
+            scene.add(directionalLight2);
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const text = textInput.value.trim();
+            if (!text) {
+                errorMessageDiv.textContent = "Please enter a text description.";
+                errorMessageDiv.style.display = 'block';
+                return;
+            }
+
+            clearScene();
+            errorMessageDiv.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/generate_cad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `Server error: ${response.status}`;
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) { /* 忽略json解析错误，使用状态码错误 */ }
+                    throw new Error(errorMsg);
+                }
+
+                const stlBlob = await response.blob();
+                if (!stlBlob.type.includes('stl') && !stlBlob.type.includes('octet-stream') && !stlBlob.type.includes('sla')) {
+                    let errorMsg = "Received unexpected data format from server.";
+                     try {
+                        const errorText = await stlBlob.text(); 
+                        const errorJson = JSON.parse(errorText); 
+                        errorMsg = errorJson.error || errorMsg;
+                    } catch (e) { /* 忽略，使用原始错误信息 */ }
+                    throw new Error(errorMsg);
+                }
+
+
+                const loader = new THREE.STLLoader();
+                const geometry = loader.parse(await stlBlob.arrayBuffer());
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0xB1B1B6, 
+                    specular: 0x111111,
+                    shininess: 100
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+
+                geometry.computeBoundingSphere(); 
+                const sphere = geometry.boundingSphere;
+                const center = sphere.center;
+                const radius = sphere.radius;
+
+                mesh.position.sub(center); 
+
+                const fov = camera.fov * (Math.PI / 180);
+                const distance = Math.abs(radius / Math.sin(fov / 2));
+                camera.position.set(distance, distance, distance); 
+                camera.lookAt(scene.position); 
+                scene.add(mesh);
+
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessageDiv.textContent = `${error.message}`;
+                errorMessageDiv.style.display = 'block';
+            } finally {
+                loadingIndicator.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        initViewer();
+
+        window.addEventListener('resize', () => {
+            if (camera && renderer && viewerContainer) {
+                const newWidth = viewerContainer.clientWidth;
+                const newHeight = viewerContainer.clientHeight;
+                camera.aspect = newWidth / newHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(newWidth, newHeight);
+            }
+        });
+    </script>
+</body>
+</html>
