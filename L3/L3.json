@@ -1,0 +1,15 @@
+{
+  "parts": [
+    {
+      "shape": "cylinder",
+      "radius": 0.0754,
+      "height": 0.75,
+      "position": [
+        0.18,
+        0.18,
+        0
+      ],
+      "operation": "new"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+A spiral staircase with six steps, rotation angle is 20 degrees.

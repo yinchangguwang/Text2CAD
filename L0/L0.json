@@ -1,0 +1,37 @@
+{
+  "parts": [
+    {
+      "shape": "cylinder",
+      "radius": 0.1,
+      "height": 3.05,
+      "position": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "shape": "cylinder",
+      "radius": 0.225,
+      "height": 0.01,
+      "position": [
+        0,
+        -0.225,
+        3.05
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [
+        1.05,
+        0.01,
+        0.6
+      ],
+      "position": [
+        0,
+        -0.365,
+        3.25
+      ]
+    }
+  ]
+}
