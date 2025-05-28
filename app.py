@@ -12,7 +12,7 @@ from json_to_stl_converter import create_stl_from_json_data
 
 app = Flask(__name__)
 
-API_KEY = "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"  # Set your OpenAI API key here
+API_KEY = ""
 system_prompt = """
 You are a CAD model generator assistant.
 
