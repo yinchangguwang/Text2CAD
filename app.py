@@ -12,7 +12,7 @@ from json_to_stl_converter import create_stl_from_json_data
 
 app = Flask(__name__)
 
-API_KEY = ""
+#这里设置key
 system_prompt = """
 You are a CAD model generator assistant.
 
