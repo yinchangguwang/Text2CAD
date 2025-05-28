@@ -2,7 +2,7 @@ from openai import OpenAI
 import json
 import cadquery as cq
 
-API_KEY = "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"  # Set your OpenAI API key here
+API_KEY = "your_key"  # Set your OpenAI API key here
 
 def generate_math_prompt(problem_description: str) -> str:
     client = OpenAI(api_key=API_KEY)

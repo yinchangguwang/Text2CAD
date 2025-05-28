@@ -287,3 +287,21 @@ Visualization (Vedo):
 STL File in CAD Software:
 
 ![alt text](pics/楼梯3.png)
+
+
+
+## Division of Labour
+
+- Hong Shen (洪燊) 22300240005 
+  - Initial Research
+  - Framework Designing
+  - Prompt Engineering
+  - Code Implementation
+  - Report & PPT
+- Zhan Xia (詹夏) 22307130379
+  - Paper Reading
+  - Baseline Reproduction
+  - Model Training
+  - Report & PPT
+- Shang Chenyu (赏宸宇) 22300240010
+  - Emotional Value
